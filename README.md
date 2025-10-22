@@ -1,8 +1,8 @@
-**NEKOLITE.JS 🗿😂😄**
-
----
+## NEKOLITE.JS 🗿😂😄
 
 ![nekoliteJS](https://i.postimg.cc/Rhp01zdt/Untitled178-20251022145931.png)
+
+---
 
 **The minimalist Node.js server framework**  
 *Express who? Presenting nekoliteJS, the lightweight, kawaii server you've always wanted!* 🗿
