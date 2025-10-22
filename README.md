@@ -1,4 +1,6 @@
-## NEKOLITE.JS 🗿😂😄
+**NEKOLITE.JS 🗿😂😄**
+
+---
 
 ![nekoliteJS](https://i.postimg.cc/Rhp01zdt/Untitled178-20251022145931.png)
 
