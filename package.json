@@ -1,0 +1,29 @@
+{
+  "name": "nekolite",
+  "version": "1.0.0",
+  "description": "lightweight server framework",
+  "keywords": [
+    "server"
+  ],
+  "homepage": "https://github.com/ransomefold/nekoliteJS#readme",
+  "bugs": {
+    "url": "https://github.com/ransomefold/nekoliteJS/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ransomefold/nekoliteJS.git"
+  },
+  "license": "MIT",
+  "author": "ransomefold",
+  "type": "module",
+  "exports": {
+  	".": "./nekolite.js"
+  },
+  "files": [
+  	"assets/", "nekolite.js"
+  ]
+  "main": "./nekolite.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
