@@ -23,9 +23,19 @@
 
 **ini bukan forkingan express ya anjir**
 
+![banner](./assets/banner.jpeg)
 ---
 
 ## Installation
 
 ```bash
 npm install nekolitejs
+```
+---
+
+## Usage example
+
+```javascript
+import Nekolite from "nekolite";
+const app = Nekolite();
+```
