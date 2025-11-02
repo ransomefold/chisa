@@ -1,0 +1,15 @@
+{
+  "name": "nekolite",
+  "version": "1.0.0",
+  "description": "lightweight server framework",
+  "keywords": [
+    "server"
+  ],
+  "license": "MIT",
+  "author": "ransomefold",
+  "main": "nekolite.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
