@@ -1,7 +1,7 @@
 {
   "name": "nekolite",
   "version": "1.0.0",
-  "description": "lightweight server framework",
+  "description": "lightweight simple server framework",
   "keywords": [
     "server"
   ],
