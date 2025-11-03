@@ -1,5 +1,7 @@
 ## NEKOLITE
 
+**GAMBAR HANYA PEMANIS, AH**
+
 ---
 
 ![nekoliteJS](./assets/maskot.jpg)
@@ -44,3 +46,4 @@ app.get("/", (req, res) => {
 
 app.listen(8080, () => console.log("server berhasil dijalankan"));
 ```
+
