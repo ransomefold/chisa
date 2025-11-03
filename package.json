@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "lightweight simple server framework",
   "keywords": [
-    "server"
+    "server", "lightweight", "simple"
   ],
   "homepage": "https://github.com/ransomefold/chisa#readme",
   "bugs": {
