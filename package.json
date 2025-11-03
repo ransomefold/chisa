@@ -17,12 +17,12 @@
   "author": "ransomefold",
   "type": "module",
   "exports": {
-  	".": "./chisa.js"
+  	".": "./main.js"
   },
   "files": [
-  	"assets/", "chisa.js"
+  	"assets/", "chisa.js", "main.js"
   ],
-  "main": "./chisa.js",
+  "main": "./main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   }
