@@ -5,8 +5,11 @@
 // BTW NGAPAIN PADA DISINI JIR?
 
 
-// const http = require("http");
+/ ----- ESM MODULE ----- /
 import http from "http";
+import fs from "fs";
+import path from "path";
+/ ---------------------- /
 
 class ChisaServer {
     constructor() {
@@ -31,28 +34,23 @@ class ChisaServer {
         const routeParts = route.split("/").filter(Boolean);
         const urlParts = url.split("/").filter(Boolean);
         const params = {};
-
         routeParts.forEach((part, i) => {
             if (part.startsWith(":")) {
                 params[part.slice(1)] = urlParts[i];
             }
         });
-
         return params;
     }
 
     listen(port, callback) {
         const server = http.createServer((req, res) => {
-            // Tambahin .send helper
             res.send = (statusOrData, data) => {
                 let status = 200;
                 let payload = statusOrData;
-
                 if (typeof statusOrData === "number") {
                     status = statusOrData;
                     payload = data;
                 }
-
                 if (typeof payload === "object") {
                     res.writeHead(status, { "Content-Type": "application/json" });
                     res.end(JSON.stringify(payload));
@@ -61,10 +59,8 @@ class ChisaServer {
                     res.end(String(payload));
                 }
             };
-
             let keyExact = `${req.method}:${req.url}`;
             let handler = this.routes[keyExact];
-
             if (!handler) {
                 for (const routeKey in this.routes) {
                     const [method, route] = routeKey.split(":");
@@ -79,19 +75,16 @@ class ChisaServer {
                     }
                 }
             }
-
             if (!handler) {
                 res.send(404, "404 Not Found - NL!");
                 return;
             }
-
             let i = 0;
             const next = () => {
                 const mw = this.middlewares[i++];
                 if (mw) mw(req, res, next);
                 else handler(req, res);
             };
-
             if (req.method === "POST") {
                 let body = "";
                 req.on("data", chunk => (body += chunk));
@@ -104,7 +97,6 @@ class ChisaServer {
                 next();
             }
         });
-
         server.listen(port, callback);
     }
 }
