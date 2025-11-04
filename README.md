@@ -44,4 +44,8 @@ app.get("/", (req, res) => {
 
 app.listen( 8080, () => console.log("server berhasil dijalankan"));
 ```
+---
 
+## DOKUMENTASI
+
+- [HOW TO USE IT](./docs/example.md)
