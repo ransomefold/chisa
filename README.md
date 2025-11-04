@@ -9,15 +9,15 @@
 
 ---
 
-## KENAPA CHISA?
+## SIAPA CHISA?
 
-- cantik dan cool 😎 
 - bini gw 😎
-- karna dia jepang 🇯🇵😎
 - my istri
+- my kisah
+- my favorite gua
 - **KARBIT MINGGIR SANA**  
 
-> "BUKANKAH INI MY KISAH? YA EMANG 😎."  
+> GABUT BANGET GW BIKIN BEGINIAN JIR LAH 😔
 
 ---
 
