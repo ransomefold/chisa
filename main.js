@@ -1,6 +1,5 @@
 // Chisa - A Lightweight Express-like Web Framework
 // Author: ransomefold
-// Enhanced Version with Security & Features
 
 import http from "http";
 import fs from "fs";
@@ -22,15 +21,14 @@ class ChisaServer {
         this.middlewares = [];
         this.errorHandlers = [];
         this.options = {
-            maxBodySize: options.maxBodySize || 1024 * 1024, // 1MB default
-            timeout: options.timeout || 30000, // 30 seconds default
+            maxBodySize: options.maxBodySize || 1024 * 1024,
+            timeout: options.timeout || 30000,
             trustProxy: options.trustProxy || false,
             cors: options.cors || false
         };
     }
     
     useStatic(mountPath, folderPath) {
-    // If only folder path is given
       if (!folderPath) {
         folderPath = mountPath;
         mountPath = "/";
@@ -39,28 +37,22 @@ class ChisaServer {
       this.middlewares.push({
         path: mountPath,
         handler: (req, res, next) => {
-            // Only serve GET or HEAD
           if (req.method !== "GET" && req.method !== "HEAD") {
               return next();
           }
-            // Determine file path
           const requestPath = decodeURIComponent(req.path.replace(mountPath, ""));
           const filePath = path.join(resolvedFolder, requestPath);
-            // Prevent directory traversal
           if (!filePath.startsWith(resolvedFolder)) {
             return next();
           }
-          // If directory, look for index.html
           let finalPath = filePath;
           if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
             finalPath = path.join(filePath, "index.html");
           }
-          // File must exist
           if (!fs.existsSync(finalPath)) {
             return next();
           }
           
-            // Detect content-type
           const mimeTypes = {
               ".html": "text/html",
               ".css": "text/css",
@@ -78,7 +70,7 @@ class ChisaServer {
           const ext = path.extname(finalPath).toLowerCase();
           const contentType = mimeTypes[ext] || "application/octet-stream";
           res.setHeader("Content-Type", contentType);
-          res.setHeader("Cache-Control", "public, max-age=3600"); // 1 hour
+          res.setHeader("Cache-Control", "public, max-age=3600"); // 1 jam
           const stream = fs.createReadStream(finalPath);
           stream.on("error", () => next());
           stream.pipe(res);
@@ -87,7 +79,6 @@ class ChisaServer {
       return this;
     }
 
-    // Enhanced middleware support
     use(path, ...handlers) {
         if (typeof path === 'function') {
             handlers.unshift(path);
@@ -99,7 +90,7 @@ class ChisaServer {
                 throw new TypeError('Middleware must be a function');
             }
             
-            if (handler.length === 4) { // Error handling middleware
+            if (handler.length === 4) {
                 this.errorHandlers.push(handler);
             } else {
                 this.middlewares.push({ path, handler });
@@ -109,7 +100,6 @@ class ChisaServer {
         return this;
     }
 
-    // Enhanced routing methods
     route(method, path, ...handlers) {
         if (!path || typeof path !== 'string') {
             throw new TypeError('Path must be a non-empty string');
@@ -126,15 +116,25 @@ class ChisaServer {
         return this;
     }
 
-    // HTTP method handlers
-    get(path, ...handlers) { return this.route('GET', path, ...handlers); }
-    post(path, ...handlers) { return this.route('POST', path, ...handlers); }
-    put(path, ...handlers) { return this.route('PUT', path, ...handlers); }
-    delete(path, ...handlers) { return this.route('DELETE', path, ...handlers); }
-    patch(path, ...handlers) { return this.route('PATCH', path, ...handlers); }
-    options(path, ...handlers) { return this.route('OPTIONS', path, ...handlers); }
-
-    // Enhanced parameter parsing
+    get(path, ...handlers) { 
+        return this.route('GET', path, ...handlers);
+    }
+    post(path, ...handlers) { 
+        return this.route('POST', path, ...handlers);
+    }
+    put(path, ...handlers) { 
+        return this.route('PUT', path, ...handlers); 
+    }
+    delete(path, ...handlers) { 
+        return this.route('DELETE', path, ...handlers);
+    }
+    patch(path, ...handlers) { 
+        return this.route('PATCH', path, ...handlers); 
+    }
+    options(path, ...handlers) { 
+        return this.route('OPTIONS', path, ...handlers); 
+    }
+    
     parseParams(route, url) {
         const routeParts = route.split('/').filter(Boolean);
         const urlParts = url.split('/').filter(Boolean);
@@ -155,43 +155,35 @@ class ChisaServer {
         return params;
     }
 
-    // Security middleware
     #securityMiddleware(req, res, next) {
-        // Add security headers
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('X-XSS-Protection', '1; mode=block');
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         
-        // CORS support
         if (this.options.cors) {
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
         }
 
-        // Generate request ID
         req.id = crypto.randomBytes(16).toString('hex');
         res.setHeader('X-Request-ID', req.id);
 
         next();
     }
 
-    // Enhanced response object
     #enhanceResponse(res) {
-        // JSON response
         res.json = (data) => {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data));
         };
-
-        // Status chain
+        
         res.status = (code) => {
             res.statusCode = code;
             return res;
         };
-
-        // Send response
+        
         res.send = (data) => {
             if (typeof data === 'object') {
                 return res.json(data);
@@ -199,8 +191,7 @@ class ChisaServer {
             res.setHeader('Content-Type', 'text/plain');
             res.end(String(data));
         };
-
-        // Redirect
+        
         res.redirect = (status, url) => {
             if (!url) {
                 url = status;
@@ -209,36 +200,31 @@ class ChisaServer {
             res.writeHead(status, { Location: url });
             res.end();
         };
-
-        // Send File
+        
         res.sendFile = (filePath) => {
             const stream = fs.createReadStream(filePath);
             stream.pipe(res);
         };
     }
-
-    // Enhanced request parsing
+    
     async #parseRequest(req) {
-        // Parse URL and query parameters
         const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
         req.path = parsedUrl.pathname;
         req.query = Object.fromEntries(parsedUrl.searchParams);
-
-        // Parse cookies
+        
         const cookies = req.headers.cookie?.split(';') || [];
         req.cookies = {};
         cookies.forEach(cookie => {
             const [key, value] = cookie.trim().split('=');
             req.cookies[key] = decodeURIComponent(value);
         });
-
-        // Parse body for POST/PUT/PATCH
+        
         if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
             const contentType = req.headers['content-type'];
             const body = await new Promise((resolve, reject) => {
                 let data = '';
                 let size = 0;
-
+                
                 req.on('data', chunk => {
                     size += chunk.length;
                     if (size > this.options.maxBodySize) {
@@ -247,7 +233,7 @@ class ChisaServer {
                     }
                     data += chunk;
                 });
-
+                
                 req.on('end', () => {
                     if (contentType?.includes('application/json')) {
                         try {
@@ -259,7 +245,7 @@ class ChisaServer {
                         resolve(data);
                     }
                 });
-
+                
                 req.on('error', reject);
             });
 
@@ -267,7 +253,6 @@ class ChisaServer {
         }
     }
 
-    // Error handling
     #handleError(err, req, res) {
         console.error(`[${req.id}] Error:`, err);
 
@@ -290,19 +275,15 @@ class ChisaServer {
     listen(port, callback) {
         const server = http.createServer(async (req, res) => {
             try {
-                // Enhance request and response objects
                 this.#enhanceResponse(res);
                 await this.#parseRequest(req);
-
-                // Add security middleware
+                
                 await new Promise((resolve) => {
                     this.#securityMiddleware(req, res, resolve);
                 });
-
-                // Find matching route
+                
                 let routeHandlers = null;
                 let params = null;
-
                 for (const [key, handlers] of this.routes) {
                     const [method, path] = key.split(':');
                     if (method === req.method) {
@@ -316,9 +297,7 @@ class ChisaServer {
                 if (!routeHandlers) {
                     throw new HttpError(404, 'Not Found');
                 }
-                // Add params to request
                 req.params = params;
-                // Execute middleware chain
                 let middlewareIndex = 0;
                 const executeMiddleware = async () => {
                     if (middlewareIndex < this.middlewares.length) {
@@ -334,10 +313,9 @@ class ChisaServer {
                         }
                     }
                 };
-
+                
                 await executeMiddleware();
-
-                // Execute route handlers
+                
                 for (const handler of routeHandlers) {
                     await new Promise((resolve, reject) => {
                         handler(req, res, (err) => {
@@ -350,11 +328,9 @@ class ChisaServer {
                 this.#handleError(err, req, res);
             }
         });
-
-        // Add server timeout
+        
         server.timeout = this.options.timeout;
-
-        // Start listening
+        
         server.listen(port, () => {
             console.log(`🌸 Chisa server is running on port ${port}`);
             if (callback) callback();
@@ -364,10 +340,8 @@ class ChisaServer {
     }
 }
 
-// Factory function
 export default function Chisa(options) {
     return new ChisaServer(options);
 }
 
-// Export error class for custom error handling
 export { HttpError };
