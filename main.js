@@ -135,26 +135,139 @@ class ChisaServer {
     options(path, ...handlers) { 
         return this.route('OPTIONS', path, ...handlers); 
     }
-    
-    
-    parseParams(route, url) {
+
+    matchRoute(pattern, urlPath) {
+        const params = {};
+        // Normalize to leading /, remove trailing / (unless root)
+        let route = pattern.replace(/\/+$/, '');
+        let url = urlPath.replace(/\/+$/, '');
+        if (!route) route = '/';
+        if (!url) url = '/';
         const routeParts = route.split('/').filter(Boolean);
         const urlParts = url.split('/').filter(Boolean);
-        const params = {};
-        
-        if (routeParts.length !== urlParts.length) return null;
-
-        for (let i = 0; i < routeParts.length; i++) {
-            const routePart = routeParts[i];
-            const urlPart = urlParts[i];
-            
-            if (routePart.startsWith(':')) {
-                params[routePart.slice(1)] = decodeURIComponent(urlPart);
-            } else if (routePart !== urlPart) {
+        let i = 0, j = 0;
+        while (i < routeParts.length && j < urlParts.length) {
+            const r = routeParts[i];
+            const u = urlParts[j];
+            if (r === '*') {
+                // wildcard matches rest
+                params['wildcard'] = urlParts.slice(j).join('/');
+                i++;
+                j = urlParts.length;
+                break;
+            } else if (r.startsWith(':')) {
+                let key = r.slice(1);
+                let optional = false;
+                if (key.endsWith('?')) {
+                    key = key.slice(0, -1);
+                    optional = true;
+                }
+                params[key] = decodeURIComponent(u);
+                i++;
+                j++;
+            } else if (r === u) {
+                i++;
+                j++;
+            } else if (r.endsWith('?')) {
+                // Optional static
+                i++;
+            } else {
                 return null;
             }
         }
-        return params;
+        // handle trailing optional params
+        while (i < routeParts.length && routeParts[i].startsWith(':') && routeParts[i].endsWith('?')) {
+            params[routeParts[i].slice(1, -1)] = undefined;
+            i++;
+        }
+        // Exact or all optionals must be matched
+        if (i === routeParts.length && j === urlParts.length) return params;
+        // wildcard at end of route matches even if more url parts remain
+        if (i === routeParts.length - 1 && routeParts[i] === '*' && j <= urlParts.length) {
+            params['wildcard'] = urlParts.slice(j).join('/');
+            return params;
+        }
+        return null;
+    }
+
+    run(port, callback) {
+        const server = http.createServer(async (req, res) => {
+            try {
+                this.#enhanceResponse(res);
+                await this.#parseRequest(req);
+                
+                await new Promise((resolve) => {
+                    this.#securityMiddleware(req, res, resolve);
+                });
+
+                let bestMatchHandlers = null;
+                let bestParams = null;
+                let bestScore = -1;
+                for (const [key, handlers] of this.routes) {
+                    const [method, path] = key.split(':');
+                    if (method === req.method) {
+                        const params = this.matchRoute(path, req.path);
+                        // Prefer longest static match, then more params, then wildcards
+                        if (params !== null) {
+                            let score = 0;
+                            const parts = path.split('/');
+                            for (const part of parts) {
+                                if (part === '*') score -= 2;
+                                else if (part.startsWith(':')) score += 1;
+                                else score += 3;
+                            }
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestMatchHandlers = handlers;
+                                bestParams = params;
+                            }
+                        }
+                    }
+                }
+                if (!bestMatchHandlers) {
+                    throw new HttpError(404, 'Not Found');
+                }
+                req.params = bestParams;
+
+                let middlewareIndex = 0;
+                const executeMiddleware = async () => {
+                    if (middlewareIndex < this.middlewares.length) {
+                        const { path, handler } = this.middlewares[middlewareIndex++];
+                        if (path === '*' || req.path.startsWith(path)) {
+                            await new Promise((resolve, reject) => {
+                                handler(req, res, (err) => {
+                                    if (err) reject(err);
+                                    else resolve();
+                                });
+                            });
+                            await executeMiddleware();
+                        }
+                    }
+                };
+                
+                await executeMiddleware();
+
+                for (const handler of bestMatchHandlers) {
+                    await new Promise((resolve, reject) => {
+                        handler(req, res, (err) => {
+                            if (err) reject(err);
+                            else resolve();
+                        });
+                    });
+                }
+            } catch (err) {
+                this.#handleError(err, req, res);
+            }
+        });
+        
+        server.timeout = this.options.timeout;
+
+        server.listen(port, () => {
+            console.log(`🌸 Chisa server is running on port ${port}`);
+            if (callback) callback();
+        });
+
+        return server;
     }
 
     #securityMiddleware(req, res, next) {
@@ -274,72 +387,6 @@ class ChisaServer {
         }
     }
 
-    listen(port, callback) {
-        const server = http.createServer(async (req, res) => {
-            try {
-                this.#enhanceResponse(res);
-                await this.#parseRequest(req);
-                
-                await new Promise((resolve) => {
-                    this.#securityMiddleware(req, res, resolve);
-                });
-                
-                let routeHandlers = null;
-                let params = null;
-                for (const [key, handlers] of this.routes) {
-                    const [method, path] = key.split(':');
-                    if (method === req.method) {
-                        params = this.parseParams(path, req.path);
-                        if (params !== null) {
-                            routeHandlers = handlers;
-                            break;
-                        }
-                    }
-                }
-                if (!routeHandlers) {
-                    throw new HttpError(404, 'Not Found');
-                }
-                req.params = params;
-                let middlewareIndex = 0;
-                const executeMiddleware = async () => {
-                    if (middlewareIndex < this.middlewares.length) {
-                        const { path, handler } = this.middlewares[middlewareIndex++];
-                        if (path === '*' || req.path.startsWith(path)) {
-                            await new Promise((resolve, reject) => {
-                                handler(req, res, (err) => {
-                                    if (err) reject(err);
-                                    else resolve();
-                                });
-                            });
-                            await executeMiddleware();
-                        }
-                    }
-                };
-                
-                await executeMiddleware();
-                
-                for (const handler of routeHandlers) {
-                    await new Promise((resolve, reject) => {
-                        handler(req, res, (err) => {
-                            if (err) reject(err);
-                            else resolve();
-                        });
-                    });
-                }
-            } catch (err) {
-                this.#handleError(err, req, res);
-            }
-        });
-        
-        server.timeout = this.options.timeout;
-        
-        server.listen(port, () => {
-            console.log(`🌸 Chisa server is running on port ${port}`);
-            if (callback) callback();
-        });
-
-        return server;
-    }
 }
 
 export default function Chisa(options) {
