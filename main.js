@@ -304,7 +304,9 @@ class ChisaServer {
         
         res.serve = (pathToFile) => {
             res.writeHead(200, {"Content-Type": "text/html"});
-            res.end(pathToFile);
+            const lok = path.resolve(pathToFile);
+            const file = fs.readFileSync(lok, "utf-8")
+            res.end(file);
         }
         
         res.redirect = (status, url) => {
